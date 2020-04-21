@@ -36,7 +36,7 @@ const values = {
 
 const valuesFlipped = Object.assign(
   {},
-  ...Object.entries(values).map(([a, b]) => ({ [b]: a }))
+  ...Object.entries(values).map(([key, value]) => ({ [value]: key }))
 );
 
 const multiplier = {
@@ -45,7 +45,12 @@ const multiplier = {
   million: 1000000,
   billion: 1000000000,
   trillion: 1000000000000,
-};
+}; // the more '-illions' you add, the higher the limit we have
+
+const multiplierFlipped = Object.assign(
+  {},
+  ...Object.entries(multiplier).map(([keys, value]) => ({ [value]: keys }))
+);
 
 const multiplierValues = Object.keys(multiplier).map((key) => multiplier[key]);
 
@@ -55,6 +60,23 @@ const stripEmptyValues = (arrayOfNumbers) =>
   arrayOfNumbers.filter((value) => value !== 0);
 
 class Converter {
+  runRecursiveCheck = (numberPassedIn, remainder, currentWord) => {
+    multiplierValues.map((value, i) => {
+      if (i > 1) {
+        if (
+          multiplierValues[i - 1] < numberPassedIn &&
+          numberPassedIn < multiplierValues[i]
+        ) {
+          remainder = numberPassedIn % multiplierValues[i - 1];
+          currentWord = `${this.toString(
+            Math.floor(numberPassedIn / multiplierValues[i - 1])
+          )} ${String(multiplierFlipped[multiplierValues[i - 1]])}`;
+        }
+      }
+    });
+    return { remainder, currentWord };
+  };
+
   toString = (numberPassedIn, previousWords = []) => {
     if (isNaN(numberPassedIn)) {
       console.log(`sorry, ${numberPassedIn} is not a number`);
@@ -93,19 +115,14 @@ class Converter {
       currentWord = `${
         valuesFlipped[String(Math.floor(numberPassedIn / 100))]
       } hundred`;
-    } else if (numberPassedIn < 1000000) {
-      // less than million
-      remainder = numberPassedIn % 1000;
-      currentWord = `${this.toString(
-        Math.floor(numberPassedIn / 1000)
-      )} thousand`;
-    } else if (numberPassedIn < 1000000000) {
-      // less than billion
-      remainder = numberPassedIn % 1000000;
-      currentWord = `${this.toString(
-        Math.floor(numberPassedIn / 1000000)
-      )} million`;
-    } // and you just continue on from here to infinity #recursion
+    }
+    const recursiveCheck = this.runRecursiveCheck(
+      numberPassedIn,
+      remainder,
+      currentWord
+    );
+    remainder = recursiveCheck.remainder;
+    currentWord = recursiveCheck.currentWord;
 
     previousWords = [...previousWords, currentWord];
 
@@ -163,26 +180,16 @@ class Converter {
     // add all values together for final value
 
     const finalValue = multiples.reduce((a, b) => a + b, 0);
-    console.log(finalValue);
+    return finalValue;
   }
 }
 
-/**
- * 
 const c = new Converter();
 
-for (let i = 0; i < 1000000000; i++) {
-  c.toString(i);
-}
-
-// toInterger
-
-c.toInterger("Five Thousand Six Hundred Thirty-two"); // 5632
-c.toInterger("five hundred billion nine million twenty five thousand"); // 500009025000
-c.toInterger("twenty five hundred"); // 2,500
-c.toInterger("two million five hundred thousand"); // 2,500,000
-
- */
+console.log(c.toString(2345643657));
+console.log(
+  c.toInterger("five hundred billion nine million twenty five thousand")
+);
 
 module.exports = {
   Converter,
