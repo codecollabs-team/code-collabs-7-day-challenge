@@ -55,13 +55,10 @@ const stripEmptyValues = (arrayOfNumbers) =>
   arrayOfNumbers.filter((value) => value !== 0);
 
 class Converter {
-  toString = (numberPassedIn, words = []) => {
+  toString = (numberPassedIn, previousWords = []) => {
     if (isNaN(numberPassedIn)) {
       console.log(`sorry, ${numberPassedIn} is not a number`);
       return;
-    }
-    if (!isFinite(numberPassedIn)) {
-      console.log("no infinites allowed!");
     }
     if (checkIsInt(numberPassedIn) === false) {
       console.log(
@@ -70,37 +67,49 @@ class Converter {
     }
 
     let remainder = 0;
-    let word = "";
+    let currentWord = "";
 
     if (numberPassedIn === 0) {
-      if (words.length === 0) {
-        console.log("zero");
-        return;
+      if (previousWords.length === 0) {
+        return "zero";
       } else {
-        console.log(words.toString().replace(",", " "));
-        return;
+        return previousWords.toString().replace(/,/g, " ");
       }
     }
 
     if (numberPassedIn < 20) {
-      word = valuesFlipped[String(numberPassedIn)];
+      currentWord = valuesFlipped[String(numberPassedIn)];
     } else if (numberPassedIn < 100) {
       remainder = numberPassedIn % 10;
 
-      word = valuesFlipped[String(Math.floor(numberPassedIn / 10) * 10)];
+      currentWord = valuesFlipped[String(Math.floor(numberPassedIn / 10) * 10)];
       if (remainder) {
-        word += ` ${valuesFlipped[String(remainder)]}`;
+        currentWord += ` ${valuesFlipped[String(remainder)]}`;
         remainder = 0;
       }
     } else if (numberPassedIn < 1000) {
+      // less than thousand
       remainder = numberPassedIn % 100;
-      word =
-        valuesFlipped[String(Math.floor(numberPassedIn / 100))] + " hundred";
-    }
+      currentWord = `${
+        valuesFlipped[String(Math.floor(numberPassedIn / 100))]
+      } hundred`;
+    } else if (numberPassedIn < 1000000) {
+      // less than million
+      remainder = numberPassedIn % 1000;
+      currentWord = `${this.toString(
+        Math.floor(numberPassedIn / 1000)
+      )} thousand`;
+    } else if (numberPassedIn < 1000000000) {
+      // less than billion
+      remainder = numberPassedIn % 1000000;
+      currentWord = `${this.toString(
+        Math.floor(numberPassedIn / 1000000)
+      )} million`;
+    } // and you just continue on from here to infinity #recursion
 
-    words = [...words, word];
+    previousWords = [...previousWords, currentWord];
 
-    return this.toString(remainder, words);
+    return this.toString(remainder, previousWords);
   };
 
   toInterger(inputNumberAsWords) {
@@ -162,7 +171,7 @@ class Converter {
  * 
 const c = new Converter();
 
-for (let i = 0; i < 1000; i++) {
+for (let i = 0; i < 1000000000; i++) {
   c.toString(i);
 }
 
