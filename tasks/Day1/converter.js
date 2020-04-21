@@ -1,4 +1,5 @@
 const values = {
+  zero: 0,
   one: 1,
   two: 2,
   three: 3,
@@ -33,6 +34,11 @@ const values = {
   trillion: 1000000000000,
 };
 
+const valuesFlipped = Object.assign(
+  {},
+  ...Object.entries(values).map(([a, b]) => ({ [b]: a }))
+);
+
 const multiplier = {
   hundred: 100,
   thousand: 1000,
@@ -45,55 +51,67 @@ const multiplierValues = Object.keys(multiplier).map((key) => multiplier[key]);
 
 const checkIsInt = (num) => num % 1 === 0;
 
-const removeLeadingZeroes = (testString) => {
-  while (testString.length > 0 && testString[0] === "0") {
-    testString.shift();
-  }
-  return testString;
-};
-
 const stripEmptyValues = (arrayOfNumbers) =>
   arrayOfNumbers.filter((value) => value !== 0);
 
 class Converter {
-  static toString(toConvertToString) {
-    // first check that it is an interger (like the challenge demands)
-    if (isNaN(toConvertToString)) {
-      console.log("Sorry, that input is not a number"); // if I'm still in typescript this will never run
+  toString = (numberPassedIn, words = []) => {
+    if (isNaN(numberPassedIn)) {
+      console.log(`sorry, ${numberPassedIn} is not a number`);
       return;
     }
-    if (!checkIsInt(toConvertToString)) {
+    if (!isFinite(numberPassedIn)) {
+      console.log("no infinites allowed!");
+    }
+    if (checkIsInt(numberPassedIn) === false) {
       console.log(
-        "Sorry, the challenge says you must not be a floating point value"
+        `sorry, ${numberPassedIn} appear to be a floating point number, no decimals allowed`
       );
-      return;
     }
 
-    // convert the interger into a string
-    const valueAsString = String(toConvertToString).split("");
+    let remainder = 0;
+    let word = "";
 
-    // trim '0's from the beginning of the number to protect against '0000004324' causing issues
-    const cleanedStringArray = removeLeadingZeroes(valueAsString); // if I'm still in typescript this will never run
+    if (numberPassedIn === 0) {
+      if (words.length === 0) {
+        console.log("zero");
+        return;
+      } else {
+        console.log(words.toString().replace(",", " "));
+        return;
+      }
+    }
 
-    // check length of the string
-    const digits = cleanedStringArray.length;
-    console.log(`${digits} digit number`);
+    if (numberPassedIn < 20) {
+      word = valuesFlipped[String(numberPassedIn)];
+    } else if (numberPassedIn < 100) {
+      remainder = numberPassedIn % 10;
 
-    // go along the array of characters against a map and convert them into relevant words
+      word = valuesFlipped[String(Math.floor(numberPassedIn / 10) * 10)];
+      if (remainder) {
+        word += ` ${valuesFlipped[String(remainder)]}`;
+        remainder = 0;
+      }
+    } else if (numberPassedIn < 1000) {
+      remainder = numberPassedIn % 100;
+      word =
+        valuesFlipped[String(Math.floor(numberPassedIn / 100))] + " hundred";
+    }
 
-    // return the final string
-    return;
-  }
+    words = [...words, word];
 
-  static toInterger(inputNumber) {
+    return this.toString(remainder, words);
+  };
+
+  toInterger(inputNumberAsWords) {
     // first check that the input is a valid string
-    if (typeof inputNumber !== "string") {
+    if (typeof inputNumberAsWords !== "string") {
       console.log("Input must be a string");
       return;
     }
 
     // check the separate words against the map above
-    const tokens = inputNumber.toLowerCase().split(/[^a-z]+/g); // anything that isn't inbetween a-z after setting everything to lowercase
+    const tokens = inputNumberAsWords.toLowerCase().split(/[^a-z]+/g); // anything that isn't inbetween a-z after setting everything to lowercase
 
     let runningValue = [];
 
@@ -140,14 +158,22 @@ class Converter {
   }
 }
 
-Converter.toString(1001340);
+/**
+ * 
+const c = new Converter();
+
+for (let i = 0; i < 1000; i++) {
+  c.toString(i);
+}
 
 // toInterger
 
-// Converter.toInterger("Five Thousand Six Hundred Thirty-two"); // 5632
-// Converter.toInterger("five hundred billion nine million twenty five thousand"); // 500009025000
-// Converter.toInterger("twenty five hundred"); // 2,500
-// Converter.toInterger("two million five hundred thousand"); // 2,500,000
+c.toInterger("Five Thousand Six Hundred Thirty-two"); // 5632
+c.toInterger("five hundred billion nine million twenty five thousand"); // 500009025000
+c.toInterger("twenty five hundred"); // 2,500
+c.toInterger("two million five hundred thousand"); // 2,500,000
+
+ */
 
 module.exports = {
   Converter,
