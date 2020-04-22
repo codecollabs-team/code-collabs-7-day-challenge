@@ -5,7 +5,9 @@ const { config } = require('./config')
  */
 class CovidRule {
     constructor(rule, condition = undefined) {
-        this.current = rule
+        this.payload = rule
+        this.response = ''
+        this.next = rule.next
         this.condition = condition
     }
 
@@ -15,42 +17,41 @@ class CovidRule {
             output: process.stdout
         })
 
-        readline.question(rule.message, input => {
+        readline.question(`${this.payload.message}: `, input => {
             this.response = input
-            console.log(rule.output)
             readline.close()
         })
-    }
 
-    current = null
-    condition = null
-    response = undefined
+        this.condition(this.response)
+        if (typeof this.next !== 'undefined') this.next.run()
+    }
 }
 
 class CovidEngine {
-    rules = []
+    constructor() {
+        this.rules = []
+    }
 
-    addRule({ rule, message }, condition) {
-        if (rule && message && typeof condition === 'function') {
-            this.rules.push(new CovidRule(rule, condition))
+    addRule({ ruleKey, message }, condition) {
+        if (ruleKey && message && typeof condition === 'function') {
+            this.rules.push(new CovidRule({ ruleKey, message }, condition))
         } else {
-            this.rules.push(new CovidRule(rule))
+            this.rules.push(new CovidRule({ ruleKey, message }))
         }
     }
 
-    run() {
-        if (this.rules.length > 0) {
-            this.rules.forEach(rule => rule.run())
-        } else {
-            console.log('No rules has been added to the engine')
+    startRule(key) {
+        if (key) {
+            const rule = this.rules.find(rule => rule.payload.ruleKey === key)
+            rule.run()
         }
     }
 }
 
 engine = new CovidEngine()
-engine.addRule({ rule: 'CE-1', message: 'Are you currently outside?' })
-engine.addRule({ rule: 'CE-2', message: 'What is your job title' }, (input) => {
-    if (this.keys.find(key => key.rule === 'CE-1' && key.response === 'Yes')) {
+engine.addRule({ ruleKey: 'CE-1', message: 'Are you currently outside?', nextRule: 'CE-2' })
+engine.addRule({ ruleKey: 'CE-2', message: 'What is your job title' }, (input, ruleKey) => {
+    if (engine.rules.find(rule => rule.ruleKey === 'CE-1' && rule.response === 'Yes')) {
         switch (input) {
             case 'Doctor':
                 console.log('Stay safe, thank you NHS')
@@ -64,4 +65,4 @@ engine.addRule({ rule: 'CE-2', message: 'What is your job title' }, (input) => {
     }
 })
 
-engine.addRule({ })
+engine.startRule('CE-1')
