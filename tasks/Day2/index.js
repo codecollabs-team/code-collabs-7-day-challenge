@@ -1,17 +1,17 @@
 const { config } = require('./config')
 
 /**
- * Each rule should track the input of what has been satisified
+ * Each rule should track the input of what has been satisified, we do this by passing in the callback
  */
 class CovidRule {
     constructor(rule, condition = undefined) {
         this.payload = rule
         this.response = ''
-        this.next = rule.next
+        this.next = rule.nextRule
         this.condition = condition
     }
 
-    run() {
+    run(nextRule = undefined, rules = []) {
         const readline = require('readline').createInterface({
             input: process.stdin,
             output: process.stdout
@@ -19,50 +19,68 @@ class CovidRule {
 
         readline.question(`${this.payload.message}: `, input => {
             this.response = input
-            readline.close()
-        })
+            const rule = rules.find(rule => rule.payload.ruleKey === nextRule)
 
-        this.condition(this.response)
-        if (typeof this.next !== 'undefined') this.next.run()
+            if (typeof this.condition !== 'undefined') this.condition(this.response)
+            if (typeof rule !== 'undefined') {
+                readline.close()
+                rule.run()
+            } else {
+                readline.close()
+            }
+        })
     }
 }
 
+/**
+ * This class is responsible for management of rules
+ */
 class CovidEngine {
     constructor() {
         this.rules = []
     }
 
-    addRule({ ruleKey, message }, condition) {
-        if (ruleKey && message && typeof condition === 'function') {
-            this.rules.push(new CovidRule({ ruleKey, message }, condition))
+    addRule({ ruleKey, message, nextRule }, condition) {
+        if (ruleKey && message && typeof condition !== 'undefined') {
+            this.rules.push(new CovidRule({ ruleKey, message, nextRule }, condition))
         } else {
-            this.rules.push(new CovidRule({ ruleKey, message }))
+            this.rules.push(new CovidRule({ ruleKey, message, nextRule }))
         }
     }
 
-    startRule(key) {
+    runRule(key) {
         if (key) {
             const rule = this.rules.find(rule => rule.payload.ruleKey === key)
+            if (typeof rule.next !== 'undefined') {
+                rule.run(rule.next, this.rules)
+                return
+            }
             rule.run()
         }
     }
 }
 
 engine = new CovidEngine()
+
 engine.addRule({ ruleKey: 'CE-1', message: 'Are you currently outside?', nextRule: 'CE-2' })
-engine.addRule({ ruleKey: 'CE-2', message: 'What is your job title' }, (input, ruleKey) => {
-    if (engine.rules.find(rule => rule.ruleKey === 'CE-1' && rule.response === 'Yes')) {
+
+engine.addRule({ ruleKey: 'CE-2', message: 'What is your job title', nextRule: 'CE-2' }, (input) => {
+    if (engine.rules.find(rule => rule.payload.ruleKey === 'CE-1' && rule.response === 'Yes')) {
         switch (input) {
             case 'Doctor':
                 console.log('Stay safe, thank you NHS')
+                return
 
-            case config.workers.includes(input):
+            case config.workers.find(worker => worker === input):
                 console.log('Stay safe')
+                return
 
             default:
                 console.log('Work from home')
+                console.log(con)
+                return
         }
     }
 })
 
-engine.startRule('CE-1')
+engine.runRule('CE-1')
